@@ -1,0 +1,31 @@
+test_case_id,email,password,expected_status,expected_message,test_type,description
+TC001,admin@practicesoftwaretesting.com,welcome01,200,Login successful,valid,Valid admin login with correct credentials
+TC002,  admin@practicesoftwaretesting.com  ,welcome01,200,Login successful,valid,Admin login with spaces before/after email
+TC003,ADMIN@PRACTICESOFTWARETESTING.COM,welcome01,200,Login successful,valid,Admin login case sensitivity check
+TC004,admin@practicesoftwaretesting.com,welcome01,200,Response time < 2000ms,performance,Admin login response time validation
+TC005,admin@practicesoftwaretesting.com,welcome01,200,Valid JWT token,valid,Admin login token format validation
+TC006,nonexistent@example.com,welcome01,401,Invalid credentials,invalid_email,Login with non-existent email
+TC007,,welcome01,400,Email is required,invalid_email,Login with empty email field
+TC008,adminpracticesoftwaretesting.com,welcome01,400,Invalid email format,invalid_email,Login with invalid email format (no @)
+TC009,admin@,welcome01,400,Invalid email format,invalid_email,Login with invalid email format (no domain)
+TC010,null,welcome01,400,Email is required,invalid_email,Login with null email
+TC011,customer@practicesoftwaretesting.com,welcome01,200,role=user not admin,invalid_email,Login with user role email (not admin)
+TC012,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@test.com,welcome01,400,Email too long,boundary,Login with extremely long email (boundary test)
+TC013,admin@practicesoftwaretesting.com,wrongpassword,401,Invalid credentials,invalid_password,Admin login with wrong password
+TC014,admin@practicesoftwaretesting.com,,400,Password is required,invalid_password,Admin login with empty password
+TC015,admin@practicesoftwaretesting.com,null,400,Password is required,invalid_password,Admin login with null password
+TC016,admin@practicesoftwaretesting.com,WELCOME01,401,Invalid credentials,invalid_password,Admin login with password case sensitivity
+TC017,admin@practicesoftwaretesting.com, welcome01 ,401,Invalid credentials,invalid_password,Admin login with spaces in password
+TC018,admin@practicesoftwaretesting.com,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,400,Password too long,boundary,Admin login with extremely long password
+TC019,admin' OR '1'='1,welcome01,400,Invalid email format,security,SQL Injection in email field
+TC020,admin@practicesoftwaretesting.com,' OR '1'='1,401,Invalid credentials,security,SQL Injection in password field
+TC021,,welcome01,400,Invalid email format,security,XSS attempt in email field
+TC022,admin@practicesoftwaretesting.com,wrong_attempt_1,429,Too many requests,security,Brute force prevention check (5 attempts)
+TC023,admin@practicesoftwaretesting.com,welcome01,400,Invalid content type,security,Login without Content-Type header
+TC024,{malformed json},malformed,400,Invalid JSON,security,Login with malformed JSON body
+TC025,missing_email_field,welcome01,400,Email is required,missing_field,Login with missing email field
+TC026,admin@practicesoftwaretesting.com,missing_password_field,400,Password is required,missing_field,Login with missing password field
+TC027,empty_body,empty_body,400,Email and password required,missing_field,Login with empty JSON body
+TC028,admin@practicesoftwaretesting.com,welcome01,200,All tokens valid,concurrent,Concurrent admin login attempts
+TC029,admin@practicesoftwaretesting.com,welcome01,200,New token issued,state,Login after logout state transition
+TC030,admin@practicesoftwaretesting.com,welcome01,200,New session created,state,Login with expired session check
