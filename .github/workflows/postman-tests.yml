@@ -1,0 +1,74 @@
+name: Run Postman Collection with CSV Data
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  run-postman:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Install Newman
+        run: npm install -g newman
+      
+      - name: Start Application
+        run: |
+          git clone https://github.com/testsmith-io/practice-software-testing.git
+          cd practice-software-testing/sprint5-with-bugs
+          npm install
+          npm start &
+          sleep 15
+      
+      - name: Download Postman Collection
+        run: |
+          curl --location \
+            --request GET "https://api.getpostman.com/collections/${{ secrets.POSTMAN_COLLECTION_ID }}" \
+            --header "X-Api-Key: ${{ secrets.POSTMAN_API_KEY }}" \
+            --output collection.json
+      
+      # Option 1: Nếu bạn có CSV trong repo
+      - name: Run Tests with CSV from repo
+        if: hashFiles('test-data/*.csv') != ''
+        run: |
+          # Run với mỗi file CSV
+          for csv_file in test-data/*.csv; do
+            echo "Running tests with $csv_file"
+            newman run collection.json \
+              -d "$csv_file" \
+              --env-var "baseUrl=http://localhost:4200/api" \
+              --iteration-count 30 \
+              --reporters cli
+          done
+      
+      # Option 2: Nếu không có CSV, run collection bình thường
+      - name: Run Tests without CSV
+        if: hashFiles('test-data/*.csv') == ''
+        run: |
+          newman run collection.json \
+            --env-var "baseUrl=http://localhost:4200/api" \
+            --reporters cli,json \
+            --reporter-json-export result.json
+      
+      - name: Display Results
+        if: always()
+        run: |
+          if [ -f result.json ]; then
+            echo "========================"
+            echo "    TEST RESULTS        "
+            echo "========================"
+            assertions=$(jq '.run.stats.assertions.total' result.json)
+            passed=$(jq '.run.stats.assertions.passed' result.json)
+            failed=$(jq '.run.stats.assertions.failed' result.json)
+            
+            echo "Total: $assertions"
+            echo "✅ Passed: $passed"
+            echo "❌ Failed: $failed"
+            echo "========================"
+          fi
