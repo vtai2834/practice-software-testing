@@ -1,0 +1,31 @@
+test_case_id,product_id,id,name,description,stock,price,brand_id,category_id,product_image_id,is_location_offer,is_rental,auth_token,expected_status,test_type,test_description
+TC061,2,2,Updated Pliers Pro,Original description kept,11,12.01,1,7,2,false,false,admin,200,valid,Update product with valid single field change
+TC062,2,2,New Name,New Description for product,100,99.99,2,2,6,true,true,admin,200,valid,Update all product fields simultaneously
+TC063,2,2,Pliers,Original description kept,11,25.99,1,7,2,false,false,admin,200,valid,Update product price to higher value
+TC064,2,2,Pliers,Original description kept,0,12.01,1,7,2,false,false,admin,200,valid,Update stock to zero (out of stock)
+TC065,2,2,Pliers,Original description kept,11,12.01,1,7,2,true,false,admin,200,valid,Toggle location offer checkbox
+TC066,2,2,Pliers,Original description kept,11,12.01,1,7,4,false,false,admin,200,valid,Update with matching category and image
+TC067,2,2,,Empty name test,11,12.01,1,7,2,false,false,admin,400,invalid,Update product with empty name
+TC068,2,2,Pliers,Original description kept,11,-15.99,1,7,2,false,false,admin,400,invalid,Update product with negative price
+TC069,2,2,Pliers,Original description kept,-10,12.01,1,7,2,false,false,admin,400,invalid,Update product with negative stock
+TC070,2,2,Pliers,Original description kept,11,12.01,1,99,2,false,false,admin,400,invalid,Update with invalid category value
+TC071,2,2,Pliers,Original description kept,11,12.01,999,7,2,false,false,admin,400,invalid,Update with invalid brand value
+TC072,2,2,Unauthorized Update,Original description kept,11,12.01,1,7,2,false,false,none,401,authorization,Update product without authentication
+TC073,2,2,User Update Attempt,Original description kept,11,12.01,1,7,2,false,false,user,403,authorization,Update product with user role token
+TC074,2,2,Expired Token Update,Original description kept,11,12.01,1,7,2,false,false,expired,401,authorization,Update product with expired token
+TC075,99999,99999,Update Non-existent,Test description,10,25.99,1,7,2,false,false,admin,404,boundary,Update non-existent product ID
+TC076,2,2,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,Original description kept,11,12.01,1,7,2,false,false,admin,400,boundary,Update with extremely long name (256+ chars)
+TC077,2,2,Pliers,Original description kept,10.5,12.01,1,7,2,false,false,admin,200,boundary,Update with decimal stock value
+TC078,2,2,Pliers,Original description kept,11,12.01,1,3,16,false,false,admin,200,validation,Update with mismatched category and image
+TC079,2,2,Pliers,Original description kept,0,12.01,1,7,2,false,false,admin,200,state,Update product from in-stock to out-of-stock
+TC080,2,2,Pliers,Original description kept,11,12.01,1,7,2,false,false,admin,400,state,Update rental status while product is rented
+TC081,2,2,Update Deleted,Trying to update deleted product,11,12.01,1,7,2,false,false,admin,404,state,Update deleted product
+TC082,2,2,Pliers,Original description kept,11,12.01,2,7,2,false,false,admin,200,state,Update brand from Brand name 1 to Brand name 2
+TC083,2,2,Concurrent Test 1,Concurrent update test,50,12.01,1,7,2,false,false,admin,200,concurrent,Concurrent updates to same product
+TC084,2,2,Performance Test,Original description kept,11,12.01,1,7,2,false,false,admin,200,performance,Update response time validation
+TC085,2,2,Bulk Update,Stress test update,11,12.01,1,7,2,false,false,admin,200,performance,Bulk update stress test
+TC086,2,2,'; UPDATE products SET price=0;--,SQL injection test,11,12.01,1,7,2,false,false,admin,400,security,SQL Injection in name field
+TC087,2,2,Pliers,<script>alert('XSS')</script>,11,12.01,1,7,2,false,false,admin,200,security,XSS attempt in description
+TC088,2,2,Pliers,Path traversal test,11,12.01,1,7,2,false,false,admin,400,security,Path traversal in product ID
+TC089,2,2,Pliers,Original description kept,11,12.01,1,7,2,null,null,admin,200,validation,Update with null values for optional fields
+TC090,2,2,Pliers,Original description kept,11,12.01,1,7,999,false,false,admin,400,validation,Update with invalid image dropdown value
