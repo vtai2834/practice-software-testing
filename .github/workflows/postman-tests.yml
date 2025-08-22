@@ -10,52 +10,92 @@ on:
 jobs:
   run-postman:
     runs-on: ubuntu-latest
-    
+    env:
+      APP_PORT: 8091
+      BASE_API_PATH: ""         # set to "/api" if your collection expects it
+      SERVICE_NAME: laravel-api # change if your service name in docker-compose.yml is different
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Install Newman
-        run: npm install -g newman
-      
-      - name: Start Application
+        uses: actions/checkout@v4
+
+      - name: Setup Node (for newman)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install tools
         run: |
-          git clone https://github.com/testsmith-io/practice-software-testing.git
-          cd practice-software-testing/sprint5-with-bugs
-          npm install
-          npm start &
-          sleep 15
-      
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+          npm install -g newman
+
+      - name: Start application with docker-compose (root docker-compose.yml)
+        run: |
+          set -eux
+          COMPOSE_FILE="${GITHUB_WORKSPACE}/docker-compose.yml"
+          if [ ! -f "$COMPOSE_FILE" ]; then
+            echo "docker-compose.yml not found at repo root. Exiting."
+            exit 1
+          fi
+
+          # Bring up services (build if needed)
+          docker compose -f "$COMPOSE_FILE" up -d --build
+
+          # Run migrate:fresh --seed on the specified service (no extra DB checks as requested)
+          if grep -q "${SERVICE_NAME}:" "$COMPOSE_FILE"; then
+            echo "Running php artisan migrate:fresh --seed on service ${SERVICE_NAME}"
+            docker compose -f "$COMPOSE_FILE" exec -T "${SERVICE_NAME}" php artisan migrate:fresh --seed
+          else
+            echo "Service ${SERVICE_NAME} not found in docker-compose.yml; skipping migrate:seed."
+          fi
+
       - name: Download Postman Collection
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          POSTMAN_COLLECTION_ID: ${{ secrets.POSTMAN_COLLECTION_ID }}
         run: |
-          curl --location \
-            --request GET "https://api.getpostman.com/collections/${{ secrets.POSTMAN_COLLECTION_ID }}" \
-            --header "X-Api-Key: ${{ secrets.POSTMAN_API_KEY }}" \
+          if [ -z "${POSTMAN_API_KEY}" ] || [ -z "${POSTMAN_COLLECTION_ID}" ]; then
+            echo "Missing POSTMAN_API_KEY or POSTMAN_COLLECTION_ID secrets"
+            exit 1
+          fi
+
+          curl --fail --location \
+            --request GET "https://api.getpostman.com/collections/${POSTMAN_COLLECTION_ID}" \
+            --header "X-Api-Key: ${POSTMAN_API_KEY}" \
             --output collection.json
-      
-      # Option 1: Nếu bạn có CSV trong repo
+
+          # If the response is the wrapper { collection: {...} }, extract the inner object
+          if jq -e '.collection' collection.json > /dev/null 2>&1; then
+            jq '.collection' collection.json > collection_only.json
+            mv collection_only.json collection.json
+          fi
+
       - name: Run Tests with CSV from repo
-        if: hashFiles('test-data/*.csv') != ''
+        if: ${{ hashFiles('test-data/*.csv') != '' }}
         run: |
-          # Run với mỗi file CSV
+          BASE_URL="http://127.0.0.1:${APP_PORT}${BASE_API_PATH}"
+          echo "Using baseUrl=${BASE_URL}"
           for csv_file in test-data/*.csv; do
             echo "Running tests with $csv_file"
             newman run collection.json \
               -d "$csv_file" \
-              --env-var "baseUrl=http://localhost:4200/api" \
+              --env-var "baseUrl=${BASE_URL}" \
               --iteration-count 30 \
-              --reporters cli
+              --reporters cli,junit \
+              --reporter-junit-export "newman-${csv_file##*/}.xml"
           done
-      
-      # Option 2: Nếu không có CSV, run collection bình thường
+
       - name: Run Tests without CSV
-        if: hashFiles('test-data/*.csv') == ''
+        if: ${{ hashFiles('test-data/*.csv') == '' }}
         run: |
+          BASE_URL="http://127.0.0.1:${APP_PORT}${BASE_API_PATH}"
+          echo "Using baseUrl=${BASE_URL}"
           newman run collection.json \
-            --env-var "baseUrl=http://localhost:4200/api" \
+            --env-var "baseUrl=${BASE_URL}" \
             --reporters cli,json \
             --reporter-json-export result.json
-      
+
       - name: Display Results
         if: always()
         run: |
@@ -66,9 +106,19 @@ jobs:
             assertions=$(jq '.run.stats.assertions.total' result.json)
             passed=$(jq '.run.stats.assertions.passed' result.json)
             failed=$(jq '.run.stats.assertions.failed' result.json)
-            
+
             echo "Total: $assertions"
             echo "✅ Passed: $passed"
             echo "❌ Failed: $failed"
             echo "========================"
+          else
+            echo "No result.json generated. Check newman outputs / JUnit files for details."
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Stop and remove containers and volumes from the root docker-compose.yml
+          if [ -f "${GITHUB_WORKSPACE}/docker-compose.yml" ]; then
+            docker compose -f "${GITHUB_WORKSPACE}/docker-compose.yml" down --volumes || true
           fi
