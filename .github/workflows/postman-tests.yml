@@ -30,32 +30,19 @@ jobs:
           sudo apt-get install -y jq
           npm install -g newman
 
-      - name: Start application with docker-compose (root docker-compose.yml)
+      - name: Start containers 🐳
         run: |
-          set -eux
-          COMPOSE_FILE="${GITHUB_WORKSPACE}/docker-compose.yml"
-          if [ ! -f "$COMPOSE_FILE" ]; then
-            echo "docker-compose.yml not found at repo root. Exiting."
-            exit 1
-          fi
-
-          # Bring up services (build if needed)
-          docker compose -f "$COMPOSE_FILE" up -d --build
-
-          # Wait for services to be ready
-          sleep 30
-
-          # Run composer install using the composer service
-          docker compose -f "$COMPOSE_FILE" run --rm composer install --no-interaction --prefer-dist --optimize-autoloader
-
-          # Run migrate:fresh --seed on the specified service
-          if docker compose -f "$COMPOSE_FILE" ps | grep -q "${SERVICE_NAME}"; then
-            echo "Running php artisan migrate:fresh --seed on service ${SERVICE_NAME}"
-            docker compose -f "$COMPOSE_FILE" exec -T "${SERVICE_NAME}" php artisan migrate:fresh --seed
-          else
-            echo "Service ${SERVICE_NAME} not found; skipping migrate:seed."
-          fi
-
+          export DISABLE_LOGGING=true
+          docker compose -f docker-compose.yml up -d --force-recreate
+      - name: Sleep for 60 seconds
+        run: sleep 60s
+        shell: bash
+      - name: Create & Seed database 🌱
+        run: |
+          docker compose exec -T laravel-api php artisan migrate:refresh --seed
+      - name: GET Version
+        run: curl -v -X GET 'http://localhost:8091/status'
+      
       - name: Download Postman Collection
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
