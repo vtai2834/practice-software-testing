@@ -40,18 +40,21 @@ jobs:
           fi
 
           # Bring up services (build if needed)
-           docker compose -f "$COMPOSE_FILE" up -d --build
- 
-           # Install Composer dependencies
-           docker compose -f "$COMPOSE_FILE" exec -T "${SERVICE_NAME}" composer install --no-interaction --prefer-dist --optimize-autoloader
- 
-           # Run migrate:fresh --seed on the specified service (no extra DB checks as requested)
-           if grep -q "${SERVICE_NAME}:" "$COMPOSE_FILE"; then
-             echo "Running php artisan migrate:fresh --seed on service ${SERVICE_NAME}"
-             docker compose -f "$COMPOSE_FILE" exec -T "${SERVICE_NAME}" php artisan migrate:fresh --seed
-           else
-             echo "Service ${SERVICE_NAME} not found in docker-compose.yml; skipping migrate:seed."
-           fi
+          docker compose -f "$COMPOSE_FILE" up -d --build
+
+          # Wait for services to be ready
+          sleep 30
+
+          # Run composer install using the composer service
+          docker compose -f "$COMPOSE_FILE" run --rm composer install --no-interaction --prefer-dist --optimize-autoloader
+
+          # Run migrate:fresh --seed on the specified service
+          if docker compose -f "$COMPOSE_FILE" ps | grep -q "${SERVICE_NAME}"; then
+            echo "Running php artisan migrate:fresh --seed on service ${SERVICE_NAME}"
+            docker compose -f "$COMPOSE_FILE" exec -T "${SERVICE_NAME}" php artisan migrate:fresh --seed
+          else
+            echo "Service ${SERVICE_NAME} not found; skipping migrate:seed."
+          fi
 
       - name: Download Postman Collection
         env:
